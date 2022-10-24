@@ -11,12 +11,23 @@ body {
 
 </style>  
   
-<h1>Scan TV Show Info</h1>
+<h1>Scan TV / Movie Show Info From Folders!</h1>
 
-<label for="folder">Select folder with TV shows</label>
+
+
+
+<label for="select">Choose a option</label>
+ <select name="select" id="select-option" class="form-control">
+          <option value="episode">TV (Episodes)</option>
+          <option value="movie">Movie</option>
+      
+        </select>
+<label for="folder">Select folder with <span id="">TV</span> </label>
+
+
 <input type="file" id="folder" webkitdirectory multiple/>
 
-<h2>Selected Files</h2>
+<h2>Info Found For Valid Files</h2>
 
 <ul>
 </ul>
@@ -24,9 +35,10 @@ body {
 <!--
 Popup to show progress
 -->
-
 <script type="module" defer>
   import {fetch_tmdb_info, tmdb_api_key} from 'https://cdn.jsdelivr.net/gh/MarketingPipeline/TheMovieDB-API-Wrapper.js/dist/themoviedb-api-wrapper.min.js' 
+
+ import tnp from "https://cdn.skypack.dev/torrent-name-parser@0.6.5";
 
 
 tmdb_api_key("6b4357c41d9c606e4d7ebe2f4a8850ea")
@@ -38,12 +50,17 @@ document.getElementById("folder").addEventListener("change", function(event) {
   var output = document.querySelector("ul");
   var files = event.target.files;
 
-  
-  function scanInfo(file){
-    fetch_tmdb_info(file.name, "episode", 1).then(function(search_results) {
+   
+  function scanInfo(file, fileType){
+    fetch_tmdb_info(file.name, fileType, 1).then(function(search_results) {
      if (!search_results.tmdb_api_error){
+      
           var item = document.createElement("li");
-    item.innerHTML = `<b>Season</b>: ${search_results[0][0].season_number}, <b>Episode</b>: ${search_results[0][0].episode_number}, <b>Title</b>: ${search_results[0][0].name}, <b>Path_To_File</b>: ${file.webkitRelativePath}`  
+       if (fileType === "episode"){
+    item.innerHTML = `<b>Name</b>: ${tnp(file.name).title} <b>Season</b>: ${search_results[0][0].season_number}, <b>Episode</b>: ${search_results[0][0].episode_number}, <b>Title</b>: ${search_results[0][0].name},  <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${file.webkitRelativePath} <br>`
+       }else{
+            item.innerHTML = `<b>Name</b>: ${tnp(file.name).title} <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${file.webkitRelativePath} <br>`
+       }
     output.appendChild(item);
      }
              });
@@ -67,11 +84,12 @@ document.getElementById("folder").addEventListener("change", function(event) {
     
     if (checkIfMediaFile(files[i].webkitRelativePath) == "isMediaFile"){
       
-    scanInfo(files[i]);
+    scanInfo(files[i], document.getElementById('select-option').value);
    
       
     }
    
   };
 }, false);
+
 </script>
