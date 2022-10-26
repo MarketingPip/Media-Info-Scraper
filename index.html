@@ -14,7 +14,7 @@ body {
 <h1>Scan TV / Movie Show Info From Folders!</h1>
 
 
-
+<button id="r">Export Data For Bodi</button>
 
 <label for="select">Choose a option</label>
  <select name="select" id="select-option" class="form-control">
@@ -22,7 +22,7 @@ body {
           <option value="movie">Movie</option>
       
         </select>
-<label for="folder">Select folder with <span id="">TV</span> </label>
+<label for="folder">Select folder with <span id="selected">TV Episode(s)</span> </label>
 
 
 <input type="file" id="folder" webkitdirectory multiple/>
@@ -35,14 +35,20 @@ body {
 <!--
 Popup to show progress
 -->
+
+
+<!--
+Popup to show progress
+-->
 <script type="module" defer>
-  import {fetch_tmdb_info, tmdb_api_key} from 'https://cdn.jsdelivr.net/gh/MarketingPipeline/TheMovieDB-API-Wrapper.js/dist/themoviedb-api-wrapper.min.js' 
+import {fetch_tmdb_info, tmdb_api_key} from 'https://cdn.jsdelivr.net/gh/MarketingPipeline/TheMovieDB-API-Wrapper.js/dist/themoviedb-api-wrapper.min.js' 
 
  import tnp from "https://cdn.skypack.dev/torrent-name-parser@0.6.5";
 
 
 tmdb_api_key("6b4357c41d9c606e4d7ebe2f4a8850ea")
 
+let Bodi_VideoDB = [];
 
 let ValidfileExts = ["webm", "mkv", "flv", "vob", "ogv", "ogg", "rrc", "gifv", "mng", "mov", "avi", "qt", "wmv", "yuv", "rm", "asf", "amv", "mp4", "m4p", "m4v", "mpg", "mp2", "mpeg", "mpe", "mpv", "m4v", "svi", "3gp", "3g2", "mxf", "roq", "nsv", "flv", "f4v", "f4p", "f4a", "f4b", "mod"]
 
@@ -57,12 +63,19 @@ document.getElementById("folder").addEventListener("change", function(event) {
       
           var item = document.createElement("li");
        if (fileType === "episode"){
+        var foundInfo = {name: tnp(file.name).title, type: "episode", season: search_results[0][0].season_number, episode: search_results[0][0].episode_number, title: search_results[0][0].name, description: search_results[0][0].overview, path_to_file: file.webkitRelativePath};
+         
+         Bodi_VideoDB.push(foundInfo);
     item.innerHTML = `<b>Name</b>: ${tnp(file.name).title} <b>Season</b>: ${search_results[0][0].season_number}, <b>Episode</b>: ${search_results[0][0].episode_number}, <b>Title</b>: ${search_results[0][0].name},  <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${file.webkitRelativePath} <br>`
        }else{
             item.innerHTML = `<b>Name</b>: ${tnp(file.name).title} <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${file.webkitRelativePath} <br>`
+                    var foundInfo = {name: tnp(file.name).title, type: "movie", description: search_results[0][0].overview, path_to_file: file.webkitRelativePath};
+         
+         Bodi_VideoDB.push(foundInfo);
        }
     output.appendChild(item);
-     }
+     
+     } 
              });
   }
   
@@ -89,7 +102,45 @@ document.getElementById("folder").addEventListener("change", function(event) {
       
     }
    
-  };
+  }; 
 }, false);
+
+
+
+document.getElementById("select-option").addEventListener("click",
+ function(event) {       
+  let value = ""
+  if (document.getElementById('select-option').value === "episode"){
+    value = "TV Episode(s)"
+  }   
+    if (document.getElementById('select-option').value === "movie"){
+    value = "Movie(s)"
+  }   
+document.getElementById('selected').innerHTML = value; 
+})
+
+
+
+document.getElementById("r").addEventListener("click",
+ function(event) {                                                  
+ if (Bodi_VideoDB.length === 0){
+   console.log("empty")
+ } else {
+
+
+downloadTextFile(JSON.stringify(Bodi_VideoDB), `bodiDB_${document.getElementById('select-option').value}.json`);
+ }
+})
+
+
+
+function downloadTextFile(text, name) {
+  const a = document.createElement('a');
+  const type = name.split(".").pop();
+  a.href = URL.createObjectURL( new Blob([text], { type:`text/${type === "txt" ? "plain" : type}` }) );
+  a.download = name;
+  a.click();
+}
+
 
 </script>
