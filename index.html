@@ -1,37 +1,34 @@
 <style>
-  label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 10px;
+#infofound_title{
+  display:none;
 }
-
-body {
-  font-family: sans-serif;
+#r{
+  display:none;
 }
 
 </style>  
   
-<h1>Scan TV / Movie Show Info From Folders!</h1>
+<h1>Scan TV / Movie or Music Info From Folders & Sub-Folders!</h1>
 
 
 <button id="r">Export Data For Bodi</button>
 
-<label for="select">Choose a option</label>
+<label for="select">Choose a option below</label>
  <select name="select" id="select-option" class="form-control">
           <option value="episode">TV (Episodes)</option>
           <option value="movie">Movie</option>
+          <option value="music">Music</option>
       
         </select>
-<label for="folder">Select folder with <span id="selected">TV Episode(s)</span> </label>
+<label for="folder">Select a folder with <span id="selected">TV Episode(s)</span> </label>
 
 
 <input type="file" id="folder" webkitdirectory multiple/>
 
-<h2>Info Found For Valid Files</h2>
+<h2 id="infofound_title">Info Found For Valid Files</h2>
 
 <ul>
 </ul>
-
 <!--
 Popup to show progress
 -->
@@ -50,34 +47,94 @@ tmdb_api_key("6b4357c41d9c606e4d7ebe2f4a8850ea")
 
 let Bodi_VideoDB = [];
 
-let ValidfileExts = ["webm", "mkv", "flv", "vob", "ogv", "ogg", "rrc", "gifv", "mng", "mov", "avi", "qt", "wmv", "yuv", "rm", "asf", "amv", "mp4", "m4p", "m4v", "mpg", "mp2", "mpeg", "mpe", "mpv", "m4v", "svi", "3gp", "3g2", "mxf", "roq", "nsv", "flv", "f4v", "f4p", "f4a", "f4b", "mod"]
+let ValidfileExts = ["webm", "mkv", "flv", "vob", "ogv", "ogg", "rrc", "gifv", "mng", "mov", "avi", "qt", "wmv", "yuv", "rm", "asf", "amv", "mp4", "m4p", "m4v", "mpg", "mp2", "mpeg", "mpe", "mpv", "m4v", "svi", "3gp", "3g2", "mxf", "roq", "nsv", "flv", "f4v", "f4p", "f4a", "f4b", "mod", "mp3"]
 
-document.getElementById("folder").addEventListener("change", function(event) {
-  var output = document.querySelector("ul");
-  var files = event.target.files;
+
+let InfoFoundTitle = document.getElementById("infofound_title")
 
    
-  function scanInfo(file, fileType){
-    fetch_tmdb_info(file.name, fileType, 1).then(function(search_results) {
+function showResultSection(){
+    InfoFoundTitle.style.display = "block"
+  document.getElementById("r").style.display = "block"
+}
+
+  function scanInfo(file, fileType, tryAgain, oldDetails){
+    
+    let fetchFileName = file.name
+    
+    let filePath = file.webkitRelativePath
+    
+    if (tryAgain){
+      fetchFileName = file
+      filePath = oldDetails
+    
+    }
+    
+    fetch_tmdb_info(fetchFileName, fileType, 1).then(function(search_results) {
+      
+    
      if (!search_results.tmdb_api_error){
       
+       
+       showResultSection()
+       
           var item = document.createElement("li");
        if (fileType === "episode"){
-        var foundInfo = {name: tnp(file.name).title, type: "episode", season: search_results[0][0].season_number, episode: search_results[0][0].episode_number, title: search_results[0][0].name, description: search_results[0][0].overview, path_to_file: file.webkitRelativePath};
+         
+      //   console.log(search_results)
+        var foundInfo = {name: tnp(fetchFileName).title, type: "episode", season: search_results[0][0].season_number, episode: search_results[0][0].episode_number, title: search_results[0][0].name, description: search_results[0][0].overview, path_to_file: filePath};
          
          Bodi_VideoDB.push(foundInfo);
-    item.innerHTML = `<b>Name</b>: ${tnp(file.name).title} <b>Season</b>: ${search_results[0][0].season_number}, <b>Episode</b>: ${search_results[0][0].episode_number}, <b>Title</b>: ${search_results[0][0].name},  <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${file.webkitRelativePath} <br>`
+    item.innerHTML = `<b>Name</b>: ${tnp(fetchFileName).title} <b>Season</b>: ${search_results[0][0].season_number}, <b>Episode</b>: ${search_results[0][0].episode_number}, <b>Title</b>: ${search_results[0][0].name},  <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${filePath} <br>`
        }else{
-            item.innerHTML = `<b>Name</b>: ${tnp(file.name).title} <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${file.webkitRelativePath} <br>`
-                    var foundInfo = {name: tnp(file.name).title, type: "movie", description: search_results[0][0].overview, path_to_file: file.webkitRelativePath};
+            item.innerHTML = `<b>Name</b>: ${tnp(file.name).title} <b>Description</b>: ${search_results[0][0].overview}, <b>Path_To_File</b>: ${filePath} <br>`
+                    var foundInfo = {name: tnp(file.name).title, type: "movie", description: search_results[0][0].overview, path_to_file: filePath};
          
          Bodi_VideoDB.push(foundInfo);
        }
     output.appendChild(item);
      
-     } 
+     } else{
+       
+       tryAgainPrompt(fetchFileName, fileType, filePath)
+       
+     }
              });
   }
+
+
+
+function tryAgainPrompt(filename, fileType, filePath){
+  
+ 
+  console.log(fileType)
+    if (confirm(`No results found for ${filename}, try again with new name?`,)) {
+   let newName = prompt("Enter a new / edit name", filename)
+ 
+ if (newName != null){  
+   
+   if (fileType === "movie" || "episode"){
+     // search themoviedb
+  scanInfo(newName, fileType, true, filePath)
+     
+   } else{
+     // search for song info 
+     
+   }
+   
+ }
+   
+  }
+}
+
+
+var output = document.querySelector("ul");
+
+
+document.getElementById("folder").addEventListener("change", function(event) {
+
+  let files = event.target.files;
+
   
   
   
@@ -97,7 +154,15 @@ document.getElementById("folder").addEventListener("change", function(event) {
     
     if (checkIfMediaFile(files[i].webkitRelativePath) == "isMediaFile"){
       
+      if(document.getElementById('select-option').value === "music") { 
+        
+        CheckForMusicMetaData(files[i])
+        
+        
+      } else{
     scanInfo(files[i], document.getElementById('select-option').value);
+        
+      }
    
       
     }
@@ -115,6 +180,10 @@ document.getElementById("select-option").addEventListener("click",
   }   
     if (document.getElementById('select-option').value === "movie"){
     value = "Movie(s)"
+  }   
+  
+      if (document.getElementById('select-option').value === "music"){
+    value = "Music"
   }   
 document.getElementById('selected').innerHTML = value; 
 })
@@ -140,6 +209,31 @@ function downloadTextFile(text, name) {
   a.href = URL.createObjectURL( new Blob([text], { type:`text/${type === "txt" ? "plain" : type}` }) );
   a.download = name;
   a.click();
+}
+
+
+
+function CheckForMusicMetaData(file){
+  const jsmediatags = window.jsmediatags;
+  jsmediatags.read(file, {
+    onSuccess: function(tag) { 
+console.log(tag)
+      
+       showResultSection()
+          var item = document.createElement("li");
+      
+       item.innerHTML = `<b>Name</b>: ${tag.tags.title} <b>type</b>: music, <b>album</b>: ${tag.tags.album}, <b>year</b>: ${tag.tags.year},  <b>track_number</b>: ${tag.tags.track}, <b>genre</b>: ${tag.tags.genre}, <b>Path_To_File</b>: ${file.webkitRelativePath} <br>`
+
+      output.appendChild(item);   
+       
+      },
+      onError: function(error) {
+      alert(`No results for song name - ${file.name}, try again?`)
+        
+        // to - do - add prompt for itunes query search 
+        console.log(error);
+      }
+  });  
 }
 
 
